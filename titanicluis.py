@@ -31,6 +31,7 @@ test = testO[~testO['Embarked'].isna()]
 train['Cabin'][~train['Cabin'].isna()] = [c[0] for c in train['Cabin'] if isinstance(c, str)]
 test['Cabin'][~test['Cabin'].isna()] = [c[0] for c in test['Cabin'] if isinstance(c, str)]
 
+#store passengerID for future output
 testPID = test['PassengerId']
 
 # remove name, passenger id, ticket id as not useful variable for analysis
@@ -44,9 +45,7 @@ HotCategorical = enc.fit_transform(toEncode).toarray()
 train = np.concatenate((train.loc[:, ~train.columns.isin(['Sex', 'Embarked'])],
                         HotCategorical), axis=1)
 ## same for test
-toEncode_test = test.loc[:, ['Sex', 'Embarked']]
-enc = OneHotEncoder(handle_unknown='ignore')
-HotCategorical_test = enc.fit_transform(toEncode_test).toarray()
+HotCategorical_test = enc.transform(toEncode_test).toarray()
 test = np.concatenate((test.loc[:, ~test.columns.isin(['Sex', 'Embarked'])],
                        HotCategorical_test), axis=1)
 
@@ -123,12 +122,12 @@ for n in range(5, 50, 5):
           "F1-score: %0.2f (+/- %0.2f)"
           % (n, score.mean(), score.std() * 2, f1.mean(), f1.std() * 2))
 
-# XGboost
-# specify parameters via map
+# XGboost -- specify parameters via map
 boosty = xgb.XGBClassifier()
 acc = cross_val_score(boosty, X_train, y_train, cv = 5, scoring = 'accuracy')
 print("XGBoost -> Accuracy: %0.2f (+/- %0.2f)\t "
           % (acc.mean(), acc.std() * 2))
+
 
 # final model
 #FM = ensemble.RandomForestClassifier(max_depth=10)
@@ -138,7 +137,7 @@ FM.fit(X_train, y_train)
 predictions = FM.predict(X_test)
 
 # predictions to submittable folder
-predictionFile = pd.DataFrame(np.stack([testPID,predictions]).T,
+predictionFile = pd.DataFrame(np.stack([testPID, predictions]).T,
                               columns = ['PassengerId','Survived'])
 predictionFile = predictionFile.astype(int)
 predictionFile.to_csv("predictions3.csv", index = False)
