@@ -11,11 +11,13 @@ from sklearn.preprocessing import OneHotEncoder
 from sklearn.pipeline import Pipeline
 from sklearn.compose import ColumnTransformer
 import numpy as np
-from sklearn.impute import KNNImputer, SimpleImputer
+from sklearn.experimental import enable_iterative_imputer
+from sklearn.impute import KNNImputer, SimpleImputer, IterativeImputer
 import xgboost as xgb
 from sklearn.model_selection import cross_val_score, cross_validate
 from sklearn.naive_bayes import GaussianNB
 from sklearn.ensemble import RandomForestClassifier
+import fancyimpute
 from sklearn import neighbors, metrics, svm, ensemble
 
 # original datasets, do not modify
@@ -81,14 +83,15 @@ for k, m in enumerate(model):
                              X_train, y_train,
                              cv=5, scoring='accuracy')
 
-    #update best model if it improves from the previous best
+    # update best model if it improves from the previous best
     best_model = m if (scores.mean() > best_score) else best_model
     best_score = scores.mean() if (scores.mean() > best_score) else best_score
 
-    #store results in a dictionary
+    # store results in a dictionary
     results[k] = {'Model': str(m).split('(')[0],
                   'Mean': scores.mean(),
-                  'SD': scores.std()}
+                  'SD': scores.std(),
+                  'n_estimators': m.n_estimators if 'XGB' in str(m).split('(')[0] else np.nan}
 
     print("Model %s gave an accuracy of %0.2f (+/-) %0.2f"
           % (str(m).split('(')[0], scores.mean(), scores.std()))
@@ -109,4 +112,4 @@ predictions = my_pipeline.predict(X_test)
 predictionFile = pd.DataFrame(np.stack([testPID, predictions]).T,
                               columns=['PassengerId', 'Survived'])
 predictionFile = predictionFile.astype(int)
-predictionFile.to_csv("predictions4.csv", index=False)
+predictionFile.to_csv("predictions.csv", index=False)
